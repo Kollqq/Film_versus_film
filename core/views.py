@@ -7,7 +7,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.models import Room, Participant, Movie, Match, Vote
-from core.serializers import RoomSerializer, ParticipantSerializer, MovieSerializer, MatchSerializer
+from core.serializers import RoomSerializer, ParticipantSerializer, MovieSerializer, MatchSerializer, \
+    MatchDetailSerializer
 
 
 def generate_code(length=6):
@@ -127,8 +128,7 @@ def current_match(request, code):
     if not match:
         return Response({'message': 'no active match'}, status=200)
 
-    return Response(MatchSerializer(match).data, status=200)
-
+    return Response(MatchDetailSerializer(match).data, status=200)
 
 def advance_tournament(room):
     if room.matches.filter(round=room.current_round, winner__isnull=True).exists():

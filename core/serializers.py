@@ -20,10 +20,25 @@ class MovieSerializer(serializers.ModelSerializer):
         fields = ['id', 'room', 'external_id', 'title', 'year', 'poster_url', 'added_by']
 
 
+class MovieShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = ["id", "title", "year", "poster_url"]
+
+
 class MatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Match
         fields = ['id', 'room', 'movie_a', 'movie_b', 'winner', 'created_at', 'resolved_at']
+
+
+class MatchDetailSerializer(serializers.ModelSerializer):
+    movie_a = MovieShortSerializer()
+    movie_b = MovieShortSerializer(allow_null=True)
+
+    class Meta:
+        model = Match
+        fields = ["id", "room", "movie_a", "movie_b", "winner", "created_at", "resolved_at"]
 
 
 class VoteSerializer(serializers.ModelSerializer):
