@@ -8,4 +8,6 @@ urlpatterns = [
     path("rooms/<str:code>/start/", views.start_tournament),
     path("rooms/<str:code>/current-match/", views.current_match),
     path("rooms/<str:code>/vote/", views.vote),
+    path("rooms/<str:code>/winner/", views.winner),
+    path("movies/search/", views.search_movies),
 ]

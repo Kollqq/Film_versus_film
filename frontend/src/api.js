@@ -47,3 +47,15 @@ export async function vote(code, payload) {
   if (!res.ok) throw new Error("vote failed");
   return res.json();
 }
+
+export async function getWinner(code) {
+  const res = await fetch(`${API_BASE}/rooms/${code}/winner/`);
+  if (!res.ok) throw new Error("getWinner failed");
+  return res.json();
+}
+
+export async function searchMovies(query) {
+  const res = await fetch(`${API_BASE}/movies/search/?query=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error("searchMovies failed");
+  return res.json();
+}

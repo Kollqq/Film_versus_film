@@ -1,5 +1,8 @@
 import random
 
+import os
+import requests
+
 from django.shortcuts import render
 from django.utils import timezone
 from rest_framework import status
@@ -10,10 +13,45 @@ from core.models import Room, Participant, Movie, Match, Vote
 from core.serializers import RoomSerializer, ParticipantSerializer, MovieSerializer, MatchSerializer, \
     MatchDetailSerializer
 
+TMDB_BASE_URL = "https://api.themoviedb.org/3"
+TMDB_POSTER_BASE = "https://image.tmdb.org/t/p/w500"
+
 
 def generate_code(length=6):
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     return "".join(random.choice(alphabet) for _ in range(length))
+
+
+@api_view(['GET'])
+def search_movies(request):
+    query = request.query_params.get('query', '').strip()
+    if not query:
+        return Response({'results': []})
+
+    api_key = os.environ.get('TMDB_API_KEY')
+    if not api_key:
+        return Response({'error': 'TMDB_API_KEY not set'}, status=500)
+
+    resp = requests.get(
+        f"{TMDB_BASE_URL}/search/movie",
+        params={"api_key": api_key, "query": query, "language": "en-US"},
+        timeout=10,
+    )
+    if resp.status_code != 200:
+        return Response({"error": "tmdb error"}, status=502)
+
+    data = resp.json()
+    results = []
+    for item in data.get("results", []):
+        poster_path = item.get("poster_path")
+        results.append({
+            "id": str(item.get("id")),
+            "title": item.get("title") or "",
+            "year": (item.get("release_date") or "")[:4],
+            "poster_url": f"{TMDB_POSTER_BASE}{poster_path}" if poster_path else "",
+        })
+
+    return Response({"results": results})
 
 
 @api_view(['POST'])
@@ -188,3 +226,27 @@ def vote(request, code):
             advance_tournament(room)
 
     return Response({'status': 'ok'})
+
+
+@api_view(['GET'])
+def winner(request, code):
+    room = Room.objects.filter(code=code).first()
+    if not room:
+        return Response({'error': 'room not found'}, status=404)
+
+    last_match = (
+        room.matches.exclude(winner__isnull=True)
+        .order_by('-round', '-resolved_at', '-id')
+        .first()
+    )
+    if not last_match:
+        return Response({'winner': None})
+
+    return Response({
+        'winner': {
+            'id': last_match.winner.id,
+            'title': last_match.winner.title,
+            'year': last_match.winner.year,
+            'poster_url': last_match.winner.poster_url,
+        }
+    })
